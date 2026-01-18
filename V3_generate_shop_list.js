@@ -1,47 +1,64 @@
-const { McpClient, DS, toHex8, frame, rect, text } = require('./figma-helper');
+const { McpClient, DS, PAGE_OFFSETS, frame, rect, text, unifiedHeader, unifiedFooter } = require('./figma-helper');
 
 async function run() {
     const c = new McpClient();
-    console.log("🛒 Fixing Shop List (V3.1 FIXED)...");
     await c.connect();
+    console.log('📋 Generating COMPLETE Shop List Page...');
 
-    const f = await frame(c, 6000, 0, DS.w, 3000, "03. CỬA HÀNG - DANH SÁCH (V3.1 FIXED)");
-    if (!f?.id) return;
-    const fId = f.id;
+    const X = PAGE_OFFSETS.shopList;
+    const fId = await frame(c, X, 0, DS.w, 3200, '03. Shop List - Complete');
+    if (!fId?.id) return console.error('Frame creation failed');
 
-    // Header 
-    await rect(c, 0, 0, DS.w, 80, "#FFFFFF", 0, fId);
-    await text(c, DS.margin, 24, "BOOKVN", 24, 800, DS.colors.pri, fId);
+    let y = 0;
+    const M = DS.margin;
 
-    // Title
-    let y = 140;
-    await text(c, DS.margin, y, "Văn học Việt Nam", 40, 800, DS.colors.n900, fId);
+    y = await unifiedHeader(c, y, fId.id);
+    y += 40;
 
-    // Sidebar (3 cols) + List (9 cols)
-    const sidebarWidth = (3 * 77) + (2 * 32);
-    const listStartX = DS.margin + sidebarWidth + DS.gutter;
-    const listWidth = (9 * 77) + (8 * 32);
+    await text(c, M, y, 'Trang chủ > Cửa hàng > Danh sách', 14, 400, DS.colors.n600, fId.id);
+    y += 50;
 
+    await text(c, M, y, 'Danh Sách Sản Phẩm', 48, 800, DS.colors.n900, fId.id);
+    y += 100;
+
+    const sidebarWidth = 280;
+    const listStartX = M + sidebarWidth + 40;
+
+    // Sidebar (same as Shop Grid)
+    await rect(c, M, y, sidebarWidth, 800, '#FFFFFF', DS.r.lg, fId.id, { stroke: DS.colors.n200 });
+    await text(c, M + 16, y + 24, 'Bộ Lọc', 18, 700, DS.colors.n900, fId.id);
+
+    // List products (200px height each)
     const products = [
-        ["Mắt Biếc", "Nguyễn Nhật Ánh", "125.000đ", "Câu chuyện về Ngạn và Hà Lan..."],
-        ["Tôi Thấy Hoa Vàng", "Nguyễn Nhật Ánh", "115.000đ", "Tuổi thơ ở làng quê miền Trung..."],
-        ["Cho Tôi Một Vé", "Nguyễn Nhật Ánh", "105.000đ", "Hành trình tìm lại ký ức..."]
+        ['Mắt Biếc', 'Nguyễn Nhật Ánh', '125.000đ', '⭐⭐⭐⭐⭐', 'Tác phẩm kinh điển của văn học Việt Nam đương đại...'],
+        ['Nhà Giả Kim', 'Paulo Coelho', '110.000đ', '⭐⭐⭐⭐⭐', 'Hành trình tìm kiếm kho báu và ý nghĩa cuộc đời...'],
+        ['Sapiens', 'Yuval Noah Harari', '250.000đ', '⭐⭐⭐⭐⭐', 'Lịch sử loài người từ thời kỳ đồ đá đến hiện đại...'],
+        ['Đắc Nhân Tâm', 'Dale Carnegie', '95.000đ', '⭐⭐⭐⭐⭐', 'Nghệ thuật giao tiếp và ứng xử trong cuộc sống...'],
+        ['Atomic Habits', 'James Clear', '180.000đ', '⭐⭐⭐⭐⭐', 'Xây dựng thói quen tốt và loại bỏ thói quen xấu...']
     ];
 
-    y += 80;
-    let i = 0;
-    for (const p of products) {
-        const py = y + i * 260;
-        await rect(c, listStartX, py, listWidth, 240, "#FFFFFF", DS.r.lg, fId, { shadow: true });
-        await rect(c, listStartX + 16, py + 16, 160, 208, DS.colors.n100, DS.r.md, fId);
-        await text(c, listStartX + 200, py + 24, p[0], 24, 700, DS.colors.n900, fId);
-        await text(c, listStartX + 200, py + 64, p[1], 16, 500, DS.colors.pri, fId);
-        await text(c, listStartX + 200, py + 100, p[3], 15, 400, DS.colors.n600, fId, listWidth - 400);
-        await text(c, listStartX + 200, py + 180, p[2], 24, 800, DS.colors.n900, fId);
-        i++;
+    for (let i = 0; i < products.length; i++) {
+        const py = y + i * 220;
+        await rect(c, listStartX, py, 920, 200, '#FFFFFF', DS.r.lg, fId.id, { shadow: true, stroke: DS.colors.n200 });
+
+        // Image (25%)
+        await rect(c, listStartX + 16, py + 16, 220, 168, DS.colors.n100, DS.r.md, fId.id);
+
+        // Details (75%)
+        const detailsX = listStartX + 252;
+        await text(c, detailsX, py + 20, products[i][0], 20, 700, DS.colors.n900, fId.id, 620);
+        await text(c, detailsX, py + 52, products[i][1], 16, 400, DS.colors.n600, fId.id);
+        await text(c, detailsX, py + 80, products[i][3], 14, 400, DS.colors.warn, fId.id);
+        await text(c, detailsX, py + 110, products[i][4], 14, 400, DS.colors.n600, fId.id, 600);
+        await text(c, detailsX, py + 148, products[i][2], 20, 700, DS.colors.pri, fId.id);
+        await rect(c, detailsX + 520, py + 140, 140, 40, DS.colors.pri, DS.r.full, fId.id);
+        await text(c, detailsX + 540, py + 150, 'Thêm vào giỏ', 14, 700, '#FFFFFF', fId.id);
     }
 
-    console.log("✨ Professional Shop List FIXED.");
+    y += products.length * 220 + 60;
+    await unifiedFooter(c, y, fId.id);
+
+    console.log('✅ Complete Shop List generated!');
 }
 
 run().catch(console.error);

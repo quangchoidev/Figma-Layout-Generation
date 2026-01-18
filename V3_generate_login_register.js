@@ -1,38 +1,102 @@
-const { McpClient, DS, toHex8, frame, rect, text } = require('./figma-helper');
+const { McpClient, DS, PAGE_OFFSETS, frame, rect, text, unifiedHeader, unifiedFooter } = require('./figma-helper');
 
 async function run() {
     const c = new McpClient();
-    console.log("🔑 Fixing Login/Register (V3.1 FIXED)...");
     await c.connect();
+    console.log('🔐 Generating COMPLETE Login/Register Page...');
 
-    const f = await frame(c, 24000, 0, DS.w, 1080, "12. ĐĂNG NHẬP (V3.1 FIXED)");
-    if (!f?.id) return;
-    const fId = f.id;
+    const X = PAGE_OFFSETS.loginRegister;
+    const fId = await frame(c, X, 0, DS.w, 1000, '10. Login Register - Complete');
+    if (!fId?.id) return console.error('Frame creation failed');
 
-    // Branding Side
-    const brandingWidth = (6 * 77) + (5 * 32) + DS.margin;
-    await rect(c, 0, 0, brandingWidth, 1080, DS.colors.priL, 0, fId);
-    await text(c, DS.margin, 400, "BOOKVN", 48, 800, DS.colors.pri, fId);
-    await text(c, DS.margin, 480, "Chào mừng bạn quay trở lại.\nHàng ngàn cuốn sách đang chờ đón bạn.", 24, 400, DS.colors.n900, fId, 500);
+    let y = 0;
+    const M = DS.margin;
 
-    // Form Side
-    const formX = brandingWidth + DS.gutter;
-    let y = 300;
-    await text(c, formX, y, "Đăng Nhập", 40, 800, DS.colors.n900, fId);
+    y = await unifiedHeader(c, y, fId.id);
+    y += 80;
 
-    const inputs = [["Email", "example@email.com"], ["Mật khẩu", "••••••••"]];
-    y += 100;
-    for (const input of inputs) {
-        await text(c, formX, y, input[0], 14, 700, DS.colors.n900, fId);
-        await rect(c, formX, y + 15, 480, 56, "#FFFFFF", DS.r.md, fId, { stroke: DS.colors.n200 });
-        await text(c, formX + 16, y + 35, input[1], 16, 400, DS.colors.n400, fId);
-        y += 110;
+    // SPLIT SCREEN LAYOUT (50/50)
+    const splitWidth = DS.container / 2;
+
+    // === LEFT SIDE: Branding ===
+    await rect(c, M, y, splitWidth, 700, DS.colors.priL, DS.r.xl, fId.id);
+
+    await text(c, M + 80, y + 200, 'Chào Mừng Bạn\nQuay Lại!', 48, 800, DS.colors.n900, fId.id, 480);
+    await text(c, M + 80, y + 340, 'Trải nghiệm mua sắm tuyệt vời với:', 18, 400, DS.colors.n600, fId.id);
+
+    const benefits = [
+        '✓ Miễn phí vận chuyển đơn đầu tiên',
+        '✓ Tích điểm mỗi đơn hàng',
+        '✓ Ưu đãi độc quyền cho thành viên',
+        '✓ Theo dõi đơn hàng dễ dàng'
+    ];
+
+    let bY = y + 400;
+    for (const benefit of benefits) {
+        await text(c, M + 80, bY, benefit, 16, 400, DS.colors.n900, fId.id);
+        bY += 36;
     }
 
-    await rect(c, formX, y, 480, 64, DS.colors.pri, DS.r.full, fId, { shadow: true });
-    await text(c, formX + 180, y + 22, "ĐĂNG NHẬP", 14, 700, "#FFFFFF", fId);
+    // === RIGHT SIDE: Login/Register Form ===
+    const formX = M + splitWidth + 40;
 
-    console.log("✨ Professional Login/Register FIXED.");
+    await rect(c, formX, y, splitWidth - 40, 700, '#FFFFFF', DS.r.xl, fId.id, { shadow: true });
+
+    let fY = y + 60;
+
+    // Tabs
+    await rect(c, formX + 40, fY, 240, 48, DS.colors.priL, DS.r.lg, fId.id);
+    await text(c, formX + 80, fY + 16, 'Đăng Nhập', 16, 700, DS.colors.pri, fId.id);
+
+    await rect(c, formX + 296, fY, 240, 48, DS.colors.n50, DS.r.lg, fId.id);
+    await text(c, formX + 340, fY + 16, 'Đăng Ký', 16, 400, DS.colors.n600, fId.id);
+    fY += 88;
+
+    // Login Form
+    await text(c, formX + 40, fY, 'Email', 14, 600, DS.colors.n600, fId.id);
+    fY += 28;
+    await rect(c, formX + 40, fY, splitWidth - 120, 56, DS.colors.n50, DS.r.md, fId.id, { stroke: DS.colors.n200 });
+    await text(c, formX + 56, fY + 18, 'your@email.com', 16, 400, DS.colors.n400, fId.id);
+    fY += 76;
+
+    await text(c, formX + 40, fY, 'Mật khẩu', 14, 600, DS.colors.n600, fId.id);
+    fY += 28;
+    await rect(c, formX + 40, fY, splitWidth - 120, 56, DS.colors.n50, DS.r.md, fId.id, { stroke: DS.colors.n200 });
+    await text(c, formX + 56, fY + 18, '••••••••', 16, 400, DS.colors.n400, fId.id);
+    fY += 76;
+
+    // Remember me + Forgot password
+    await rect(c, formX + 40, fY, 16, 16, '#FFFFFF', 4, fId.id, { stroke: DS.colors.n400 });
+    await text(c, formX + 64, fY + 1, 'Ghi nhớ đăng nhập', 14, 400, DS.colors.n600, fId.id);
+    await text(c, formX + 360, fY + 1, 'Quên mật khẩu?', 14, 400, DS.colors.pri, fId.id);
+    fY += 56;
+
+    // Login button
+    await rect(c, formX + 40, fY, splitWidth - 120, 56, DS.colors.pri, DS.r.full, fId.id, { shadow: true });
+    await text(c, formX + 180, fY + 18, 'ĐĂNG NHẬP', 16, 700, '#FFFFFF', fId.id);
+    fY += 76;
+
+    // Divider
+    await rect(c, formX + 40, fY + 16, splitWidth - 120, 1, DS.colors.n200, 0, fId.id);
+    await text(c, formX + 250, fY + 4, 'hoặc', 14, 400, DS.colors.n600, fId.id);
+    fY += 56;
+
+    // Social login buttons
+    const socials = [
+        ['🔵', 'Google'],
+        ['🔷', 'Facebook'],
+        ['⚫', 'Apple']
+    ];
+
+    for (let i = 0; i < socials.length; i++) {
+        await rect(c, formX + 40 + i * 180, fY, 160, 48, '#FFFFFF', DS.r.md, fId.id, { stroke: DS.colors.n200 });
+        await text(c, formX + 60 + i * 180, fY + 14, socials[i][0] + ' ' + socials[i][1], 14, 600, DS.colors.n900, fId.id);
+    }
+
+    y += 780;
+    await unifiedFooter(c, y, fId.id);
+
+    console.log('✅ Complete Login/Register generated!');
 }
 
 run().catch(console.error);
