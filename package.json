@@ -1,0 +1,16 @@
+{
+    "name": "figma-layout-generation",
+    "version": "1.0.0",
+    "description": "Automated Figma Layout Generators via MCP",
+    "main": "run_all.js",
+    "scripts": {
+        "start": "node run_all.js",
+        "gen:ds": "node V3_generate_design_system.js",
+        "gen:home": "node V3_generate_homepage.js"
+    },
+    "dependencies": {
+        "axios": "^1.6.0"
+    },
+    "author": "",
+    "license": "ISC"
+}
